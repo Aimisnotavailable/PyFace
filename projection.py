@@ -7,7 +7,7 @@ class Cube:
     
     def __init__(self):
         self.ROTATE_SPEED = 0.02
-        self.scale = 50
+        self.scale = 30
 
         self.projection_matrix = [[1,0,0],
                             [0,1,0],
@@ -28,7 +28,7 @@ class Cube:
 
 
     def connect_points(self, surf, i, j, points) -> None:
-        pygame.draw.line(surf, (0, 0, 0), (points[i][0], points[i][1]) , (points[j][0], points[j][1]))
+        pygame.draw.line(surf, (255, 255, 255), (points[i][0], points[i][1]) , (points[j][0], points[j][1]))
 
     def get_rotation_x(self, angle_x) -> list:
         rotation_x = [[1, 0, 0],
@@ -65,10 +65,11 @@ class Cube:
             rotate_z = self.multiply_m(rotation_z, rotate_y)
             point_2d = self.multiply_m(self.projection_matrix, rotate_z)
         
-            x = (point_2d[0][0] * self.scale) + surf.get_width()//2
-            y = (point_2d[1][0] * self.scale) + surf.get_height()//2
+            x = (point_2d[0][0] * self.scale) + 60
+            y = (point_2d[1][0] * self.scale) + 60
 
             points[i] = (x,y)
+           #
             i += 1
             pygame.draw.circle(surf, (255, 0, 0), (x, y), 5)
 
