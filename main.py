@@ -7,30 +7,30 @@ import re
 import sys
 import math
 
-from projection import Cube
+from smooth import Smooth
+from projection import Cube, Polygon
 
-X_ROT_IDX = (0, 152)
+HIST_SIZE = 60
+
+MAX_SCALE = 135
+MIN_SCALE = 45
+MEDIAN_SCALE = (MAX_SCALE + MIN_SCALE) // 2
+
+X_ROT_IDX =  (0, 152) # (4, 242) #
 Y_ROT_IDX = ((70, 107) , (300, 336))
 Z_ROT_IDX = (105, 334)
 
 def get_rot_z_angle(x, y):
-    return math.degrees(math.atan2(y, x)) * 0.05
+    return math.degrees(math.degrees(math.atan2(y, x)) * 0.001)
 
 def get_rot_y_angle(len_difference):
-    return math.radians(len_difference * 180) * 0.5
+    return math.degrees(math.radians(len_difference) * 0.01)
 
 def get_rot_x_angle(len_difference):
-    return math.radians(len_difference * 90) * 0.05
+    return math.degrees(math.radians(len_difference) * 0.02 )
 
 def get_dist(point1, point2):
     return math.sqrt((point1[0] - point2[0]) ** 2 + (point1[1] - point2[1]) ** 2)
-
-def smooth(start, end):
-    if start < end:
-       start = min(end, start + end * 0.1)
-    else:
-       start = max(end, start - end * 0.1)
-    return end
 
 FACE_SCALE = 0
 
@@ -53,21 +53,26 @@ results = None
 
 points = None
 pygame.mouse.set_visible(False)
-
+data = []
+smooth = Smooth()
 current_a_x = current_a_y = current_a_z = 0
 
 def render_face(surf, rect, render_points, connections):
-    # for idx, point in enumerate(render_points):
+    for idx, point in enumerate(render_points):
             
-    #         if rect.collidepoint(point):
-    #             print(idx)
+            if rect.collidepoint(point):
+                print(idx)
             
-    #         pygame.draw.circle(surf, (255, 255, 255), point, 2)
+            pygame.draw.circle(surf, (255, 255, 255), point, 2)
     
     if render_points:
         for pairs in connections:
             pygame.draw.line(screen, (255, 0, 0), render_points[pairs[0]], render_points[pairs[1]])
-            
+
+x = 0
+y = 0
+z = 0
+               
 while True:
     
     render_points = []
@@ -95,20 +100,33 @@ while True:
     rect = pygame.Rect(*mpos, 2, 2)
     
     # print(get_rot_z_angle(render_points[386][0] - render_points[159][0], render_points[386][1] - render_points[159][1]))
-    pygame.draw.rect(screen, (0, 0, 0), rect, 10)
+    pygame.draw.rect(screen, (0, 0, 255), rect, 10)
+    
+    FACE_SCALE = max(MIN_SCALE, min(MAX_SCALE, math.sqrt((render_points[159][0] - render_points[386][0]) ** 2 + (render_points[159][1] - render_points[386][1]) ** 2)))
+    scale_factor = FACE_SCALE / MEDIAN_SCALE
     
     l_e_brow = get_dist(render_points[Y_ROT_IDX[0][0]], render_points[Y_ROT_IDX[0][1]])
     r_e_brow = get_dist(render_points[Y_ROT_IDX[1][0]], render_points[Y_ROT_IDX[1][1]]) 
     
-    FACE_SCALE = math.sqrt((render_points[159][0] - render_points[386][0]) ** 2 + (render_points[159][1] - render_points[386][1]) ** 2)
-    y_diff =  (l_e_brow/r_e_brow) * (1 if r_e_brow < l_e_brow else -1) 
+    y_diff =  (l_e_brow - r_e_brow) # * (1 if r_e_brow < l_e_brow else -1) 
     x_diff = get_dist(render_points[X_ROT_IDX[0]],render_points[X_ROT_IDX[1]])
     
-    current_a_x = smooth(current_a_x, get_rot_x_angle(x_diff))
-    current_a_y = smooth(current_a_y, get_rot_y_angle(y_diff))
-    current_a_z = smooth(current_a_z, get_rot_z_angle(render_points[386][0] - render_points[159][0], render_points[386][1] - render_points[159][1]))
     
-    Cube().render(screen, angle_x=current_a_x, angle_y=current_a_y, angle_z=current_a_z)
+    current_a_x = get_rot_x_angle(x_diff / scale_factor)
+    current_a_y = get_rot_y_angle(y_diff / scale_factor)
+    current_a_z = get_rot_z_angle(render_points[386][0] - render_points[159][0], render_points[386][1] - render_points[159][1])
+    
+    screen.blit(font.render(f'ROT X: {current_a_x : .3f}', True, (255, 255, 255)), (50, 200))
+    screen.blit(font.render(f'ROT Y: {current_a_y : .3f}', True, (255, 255, 255)), (50, 220))
+    screen.blit(font.render(f'ROT Z: {current_a_z : .3f}', True, (255, 255, 255)), (50, 240))
+    
+    # points = []
+    # connections = []
+    
+    Polygon().render(screen, x, y, z)
+    
+    # Cube().render(screen, angle_x=current_a_x, angle_y=current_a_y, angle_z=current_a_z)
+    
     
     # print(height)
     # print(math.sqrt((render_points[10][0] - render_points[152][0]) ** 2 + (render_points[10][1] - render_points[152][1]) ** 2) - height)
@@ -119,10 +137,29 @@ while True:
     
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
+            fp =open('test.json', 'w+')
+            json.dump(FACE_SCALE, fp)
             cap.release()
             pygame.quit()
             sys.exit()
-    
+        
+        keys = pygame.key.get_pressed()
+        
+        if keys[pygame.K_w]:
+            x += 0.1
+        if keys[pygame.K_s]:
+            x -= 0.1
+        if keys[pygame.K_a]:
+            y += 0.1
+        if keys[pygame.K_d]: 
+            y -= 0.1
+        if keys[pygame.K_q]:
+            z += 0.1
+        if keys[pygame.K_e]:     
+            z -= 0.1
+        
+        if keys[pygame.K_r]:
+            x=y=z=0
     #screen.blit(pygame.transform.scale(display, screen.get_size()), (0, 0))
     pygame.display.update()
     clock.tick(60)

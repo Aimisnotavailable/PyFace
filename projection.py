@@ -3,33 +3,11 @@ from math import *
 import numpy as np
 
 
-class Cube:
-    
+class Projection:
     def __init__(self):
-        self.ROTATE_SPEED = 0.02
-        self.scale = 30
-
         self.projection_matrix = [[1,0,0],
                             [0,1,0],
-                            [0,0,0]]
-
-        self.cube_points = [n for n in range(8)]
-        self.cube_points[0] = [[-1], [-1], [1]]
-        self.cube_points[1] = [[1],[-1],[1]]
-        self.cube_points[2] = [[1],[1],[1]]
-        self.cube_points[3] = [[-1],[1],[1]]
-        self.cube_points[4] = [[-1],[-1],[-1]]
-        self.cube_points[5] = [[1],[-1],[-1]]
-        self.cube_points[6] = [[1],[1],[-1]]
-        self.cube_points[7] = [[-1],[1],[-1]]
-        
-    def multiply_m(self, a, b) -> list:
-        return np.dot(a, b)       
-
-
-    def connect_points(self, surf, i, j, points) -> None:
-        pygame.draw.line(surf, (255, 255, 255), (points[i][0], points[i][1]) , (points[j][0], points[j][1]))
-
+                            [0,0,1]]
     def get_rotation_x(self, angle_x) -> list:
         rotation_x = [[1, 0, 0],
                     [0, cos(angle_x), -sin(angle_x)],
@@ -47,6 +25,95 @@ class Cube:
                         [sin(angle_z), cos(angle_z), 0],
                         [0, 0, 1]]
         return rotation_z
+    
+    def multiply_m(self, a, b) -> list:
+        return np.dot(a, b)       
+
+class Polygon:
+    
+    def __init__(self, points=[], connection=[]):
+        self.projection = Projection()
+        # self.points = points
+        self.connections = connection
+        self.scale = 30
+        
+        self.points = [n for n in range(8)]
+        self.points[0] = [[-1], [-1], [1]]
+        self.points[1] = [[-1], [1], [1]]
+        self.points[2] = [[1], [1], [1]]
+        self.points[3] = [[1], [-1], [1]]
+        
+        self.points[4] = [[-1], [-1], [-1]]
+        self.points[5] = [[-1], [1], [-1]]
+        self.points[6] = [[1], [1], [-1]]
+        self.points[7] = [[1], [-1], [-1]]
+        
+        self.connections = [ 
+                             {'color' : (255, 0, 0), 'points' : (4, 5, 6, 7)}, # back
+                             {'color' : (0, 255, 0), 'points' : (0, 4, 7, 3)}, # top
+                             {'color' : (0, 0, 255), 'points' : (1, 2, 6, 5)}, # bottom
+                             {'color' : (255, 255, 0), 'points' : (4, 0, 1, 5)}, # left
+                             {'color' : (0, 255, 255), 'points' : (3, 2, 6, 7)}, # right
+                             {'color' : (255, 255, 255), 'points' : (0, 1, 2, 3)}, # front
+                             ]
+
+    def update(self, angle_x, angle_y, angle_z):
+        points = [0 for _ in range(len(self.points))]
+        i = 0
+        rotation_x = self.projection.get_rotation_x(angle_x)
+        rotation_y = self.projection.get_rotation_y(angle_y)
+        rotation_z = self.projection.get_rotation_z(angle_z)
+        
+        for point in self.points:
+            rotate_x = self.projection.multiply_m(rotation_x, point)
+            rotate_y = self.projection.multiply_m(rotation_y, rotate_x)
+            rotate_z = self.projection.multiply_m(rotation_z, rotate_y)
+            point_2d = self.projection.multiply_m(self.projection.projection_matrix, rotate_z)
+            
+            x = (point_2d[0][0] * self.scale) + 60
+            y = (point_2d[1][0] * self.scale) + 60
+            z = (point_2d[1][0] * self.scale) + 60
+            print(point_2d)
+            points[i] = (x,y,z)
+            i +=1
+        
+        return points
+    
+    def render(self, surf, angle_x, angle_y, angle_z):
+        points = self.update(angle_x, angle_y, angle_z)
+        
+        for faces in self.connections:
+            coords = []
+            for point in faces['points']:
+                if points[point][2] <  1:
+                    print("HEHE")
+                    continue
+                coords.append(points[point][0:2])
+                
+            pygame.draw.polygon(surf, faces['color'], coords)
+    
+class Cube:
+    
+    def __init__(self):
+        self.ROTATE_SPEED = 0.02
+        self.scale = 30
+        self.projection = Projection()
+        
+
+        self.cube_points = [n for n in range(8)]
+        self.cube_points[0] = [[-1], [-1], [1]]
+        self.cube_points[1] = [[1],[-1],[1]]
+        self.cube_points[2] = [[1],[1],[1]]
+        self.cube_points[3] = [[-1],[1],[1]]
+        self.cube_points[4] = [[-1],[-1],[-1]]
+        self.cube_points[5] = [[1],[-1],[-1]]
+        self.cube_points[6] = [[1],[1],[-1]]
+        self.cube_points[7] = [[-1],[1],[-1]]
+
+    def connect_points(self, surf, i, j, points) -> None:
+        pygame.draw.line(surf, (255, 255, 255), (points[i][0], points[i][1]) , (points[j][0], points[j][1]))
+
+    
     # Main Loop
     
 
@@ -55,33 +122,38 @@ class Cube:
         i = 0
         
         
-        rotation_x = self.get_rotation_x(angle_x)
-        rotation_y = self.get_rotation_y(angle_y)
-        rotation_z = self.get_rotation_z(angle_z)
+        rotation_x = self.projection.get_rotation_x(angle_x)
+        rotation_y = self.projection.get_rotation_y(angle_y)
+        rotation_z = self.projection.get_rotation_z(angle_z)
         
         for point in self.cube_points:
-            rotate_x = self.multiply_m(rotation_x, point)
-            rotate_y = self.multiply_m(rotation_y, rotate_x)
-            rotate_z = self.multiply_m(rotation_z, rotate_y)
-            point_2d = self.multiply_m(self.projection_matrix, rotate_z)
-        
+            rotate_x = self.projection.multiply_m(rotation_x, point)
+            rotate_y = self.projection.multiply_m(rotation_y, rotate_x)
+            rotate_z = self.projection.multiply_m(rotation_z, rotate_y)
+            point_2d = self.projection.multiply_m(self.projection.projection_matrix, rotate_z)
+            
             x = (point_2d[0][0] * self.scale) + 60
             y = (point_2d[1][0] * self.scale) + 60
 
             points[i] = (x,y)
            #
             i += 1
-            pygame.draw.circle(surf, (255, 0, 0), (x, y), 5)
+            # pygame.draw.circle(surf, (255, 0, 0), (x, y), 5)
 
         self.connect_points(surf, 0, 1, points)
         self.connect_points(surf, 0, 3, points)
         self.connect_points(surf, 0, 4, points)
+        
         self.connect_points(surf, 1, 2, points)
         self.connect_points(surf, 1, 5, points)
+        
         self.connect_points(surf, 2, 6, points)
         self.connect_points(surf, 2, 3, points)
+        
         self.connect_points(surf, 3, 7, points)
+        
         self.connect_points(surf, 4, 5, points)
-        self.connect_points(surf,4, 7, points)
+        self.connect_points(surf, 4, 7, points)
+        
         self.connect_points(surf,6, 5, points)
         self.connect_points(surf,6, 7, points)
