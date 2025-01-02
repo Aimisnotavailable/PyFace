@@ -72,58 +72,60 @@ def render_face(surf, rect, render_points, connections):
 x = 0
 y = 0
 z = 0
-               
+fp = open('points.json', 'r+')
+points = json.load(fp)
+conn = [i for i in range(len(points))]
+
 while True:
     
     render_points = []
     screen.fill((0, 0, 0))
     display.fill((255, 255, 255))
-    success, image = cap.read()
+    # success, image = cap.read()
     
-    height, width, _ = image.shape
-    # Convert the BGR image to RGB
-    rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    # height, width, _ = image.shape
+    # # Convert the BGR image to RGB
+    # rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-    # Process the image to find face landmarks
-    results = face_mesh.process(rgb_image)
+    # # Process the image to find face landmarks
+    # results = face_mesh.process(rgb_image)
     
-    if results.multi_face_landmarks:
-        points = results.multi_face_landmarks[0].landmark
+    # if results.multi_face_landmarks:
+    #     points = results.multi_face_landmarks[0].landmark
     
-    if points:
-        for point in points:
-            render_points.append([(point.x * width), (point.y * height)])
+    # if points:
+    #     for point in points:
+    #         render_points.append([(point.x * width), (point.y * height)])
     
-    connections = mp_face_mesh.FACEMESH_CONTOURS
+    # connections = mp_face_mesh.FACEMESH_CONTOURS
 
-    mpos = pygame.mouse.get_pos() #[pygame.mouse.get_pos()[0] // 2, pygame.mouse.get_pos()[1] // 2]
-    rect = pygame.Rect(*mpos, 2, 2)
+    # mpos = pygame.mouse.get_pos() #[pygame.mouse.get_pos()[0] // 2, pygame.mouse.get_pos()[1] // 2]
+    # rect = pygame.Rect(*mpos, 2, 2)
     
-    # print(get_rot_z_angle(render_points[386][0] - render_points[159][0], render_points[386][1] - render_points[159][1]))
-    pygame.draw.rect(screen, (0, 0, 255), rect, 10)
+    # # print(get_rot_z_angle(render_points[386][0] - render_points[159][0], render_points[386][1] - render_points[159][1]))
+    # pygame.draw.rect(screen, (0, 0, 255), rect, 10)
     
-    FACE_SCALE = max(MIN_SCALE, min(MAX_SCALE, math.sqrt((render_points[159][0] - render_points[386][0]) ** 2 + (render_points[159][1] - render_points[386][1]) ** 2)))
-    scale_factor = FACE_SCALE / MEDIAN_SCALE
+    # FACE_SCALE = max(MIN_SCALE, min(MAX_SCALE, math.sqrt((render_points[159][0] - render_points[386][0]) ** 2 + (render_points[159][1] - render_points[386][1]) ** 2)))
+    # scale_factor = FACE_SCALE / MEDIAN_SCALE
     
-    l_e_brow = get_dist(render_points[Y_ROT_IDX[0][0]], render_points[Y_ROT_IDX[0][1]])
-    r_e_brow = get_dist(render_points[Y_ROT_IDX[1][0]], render_points[Y_ROT_IDX[1][1]]) 
+    # l_e_brow = get_dist(render_points[Y_ROT_IDX[0][0]], render_points[Y_ROT_IDX[0][1]])
+    # r_e_brow = get_dist(render_points[Y_ROT_IDX[1][0]], render_points[Y_ROT_IDX[1][1]]) 
     
-    y_diff =  (l_e_brow - r_e_brow) # * (1 if r_e_brow < l_e_brow else -1) 
-    x_diff = get_dist(render_points[X_ROT_IDX[0]],render_points[X_ROT_IDX[1]])
+    # y_diff =  (l_e_brow - r_e_brow) # * (1 if r_e_brow < l_e_brow else -1) 
+    # x_diff = get_dist(render_points[X_ROT_IDX[0]],render_points[X_ROT_IDX[1]])
     
     
-    current_a_x = get_rot_x_angle(x_diff / scale_factor)
-    current_a_y = get_rot_y_angle(y_diff / scale_factor)
-    current_a_z = get_rot_z_angle(render_points[386][0] - render_points[159][0], render_points[386][1] - render_points[159][1])
+    # current_a_x = get_rot_x_angle(x_diff / scale_factor)
+    # current_a_y = get_rot_y_angle(y_diff / scale_factor)
+    # current_a_z = get_rot_z_angle(render_points[386][0] - render_points[159][0], render_points[386][1] - render_points[159][1])
     
-    screen.blit(font.render(f'ROT X: {current_a_x : .3f}', True, (255, 255, 255)), (50, 200))
-    screen.blit(font.render(f'ROT Y: {current_a_y : .3f}', True, (255, 255, 255)), (50, 220))
-    screen.blit(font.render(f'ROT Z: {current_a_z : .3f}', True, (255, 255, 255)), (50, 240))
+    # screen.blit(font.render(f'ROT X: {current_a_x : .3f}', True, (255, 255, 255)), (50, 200))
+    # screen.blit(font.render(f'ROT Y: {current_a_y : .3f}', True, (255, 255, 255)), (50, 220))
+    # screen.blit(font.render(f'ROT Z: {current_a_z : .3f}', True, (255, 255, 255)), (50, 240))
     
     # points = []
     # connections = []
-    
-    Polygon().render(screen, x, y, z)
+    Polygon(points, connection=[{'color' : (0, 255, 122), 'points' : conn}]).render(screen, x, y, z)
     
     # Cube().render(screen, angle_x=current_a_x, angle_y=current_a_y, angle_z=current_a_z)
     
@@ -132,7 +134,7 @@ while True:
     # print(math.sqrt((render_points[10][0] - render_points[152][0]) ** 2 + (render_points[10][1] - render_points[152][1]) ** 2) - height)
     
     
-    render_face(screen, rect, render_points, connections)
+    # render_face(screen, rect, render_points, connections)
     # pygame.draw.line(screen, (0, 0, 255), render_points[159], render_points[386])
     
     for event in pygame.event.get():
