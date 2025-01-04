@@ -16,6 +16,8 @@ MAX_SCALE = 135
 MIN_SCALE = 45
 MEDIAN_SCALE = (MAX_SCALE + MIN_SCALE) // 2
 
+R_INTRV = 0.1
+
 X_ROT_IDX =  (0, 152) # (4, 242) #
 Y_ROT_IDX = ((70, 107) , (300, 336))
 Z_ROT_IDX = (105, 334)
@@ -48,7 +50,7 @@ face_mesh = mp_face_mesh.FaceMesh()
 draw = mp.solutions.drawing_utils
 
 # Initialize video capture
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture('manny.mp4')
 results = None
 
 points = None
@@ -72,7 +74,15 @@ def render_face(surf, rect, render_points, connections):
 x = 0
 y = 0
 z = 0
-               
+
+fp = open('shapes/test.json', 'r+')
+data = json.load(fp)
+shapes : list[Polygon] = []
+
+for img in data:
+    conn = [i for i in range(len(img['3d']))]
+    shapes.append(Polygon(img['3d'], connection=[{'color' : img['color'], 'points' : conn}]))
+
 while True:
     
     render_points = []
@@ -120,10 +130,8 @@ while True:
     screen.blit(font.render(f'ROT Y: {current_a_y : .3f}', True, (255, 255, 255)), (50, 220))
     screen.blit(font.render(f'ROT Z: {current_a_z : .3f}', True, (255, 255, 255)), (50, 240))
     
-    # points = []
-    # connections = []
-    
-    Polygon().render(screen, x, y, z)
+    for shape in shapes:
+        shape.render(screen, current_a_x, current_a_y, current_a_z)
     
     # Cube().render(screen, angle_x=current_a_x, angle_y=current_a_y, angle_z=current_a_z)
     
@@ -146,17 +154,17 @@ while True:
         keys = pygame.key.get_pressed()
         
         if keys[pygame.K_w]:
-            x += 0.1
+            x += R_INTRV
         if keys[pygame.K_s]:
-            x -= 0.1
+            x -= R_INTRV
         if keys[pygame.K_a]:
-            y += 0.1
+            y += R_INTRV
         if keys[pygame.K_d]: 
-            y -= 0.1
+            y -= R_INTRV
         if keys[pygame.K_q]:
-            z += 0.1
+            z += R_INTRV
         if keys[pygame.K_e]:     
-            z -= 0.1
+            z -= R_INTRV
         
         if keys[pygame.K_r]:
             x=y=z=0

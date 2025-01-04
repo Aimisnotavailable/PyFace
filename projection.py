@@ -1,28 +1,45 @@
 import pygame
-from math import *
+import math
 import numpy as np
 
-
 class Projection:
-    def __init__(self):
-        self.projection_matrix = [[1,0,0],
-                            [0,1,0],
-                            [0,0,1]]
+    def __init__(self, fov, aspect_ratio, near, far):
+        self.fov = fov
+        self.aspect_ratio = aspect_ratio
+        self.near = near
+        self.far = far
+        self.update_projection_matrix()
+
+    def update_projection_matrix(self):
+        f = 1 / math.tan(math.radians(self.fov) / 2)
+        nf = 1 / (self.near - self.far)
+
+        self.projection_matrix = [
+            [f / self.aspect_ratio, 0, 0, 0],
+            [0, f, 0, 0],
+            [0, 0, (self.far + self.near) * nf, -1],
+            [0, 0, (2 * self.far * self.near) * nf, 0]
+        ]
+
+        # self.projection_matrix = [[1,0,0],
+        #                     [0,1,0],
+        #                     [0,0,1]]
+
     def get_rotation_x(self, angle_x) -> list:
         rotation_x = [[1, 0, 0],
-                    [0, cos(angle_x), -sin(angle_x)],
-                    [0, sin(angle_x), cos(angle_x)]]
+                    [0, math.cos(angle_x), -math.sin(angle_x)],
+                    [0, math.sin(angle_x), math.cos(angle_x)]]
         return rotation_x
 
     def get_rotation_y(self, angle_y) -> list:
-        rotation_y = [[cos(angle_y), 0, sin(angle_y)],
+        rotation_y = [[math.cos(angle_y), 0, math.sin(angle_y)],
                         [0, 1, 0],
-                        [-sin(angle_y), 0, cos(angle_y)]]
+                        [-math.sin(angle_y), 0, math.cos(angle_y)]]
         return rotation_y
 
     def get_rotation_z(self, angle_z) -> list:
-        rotation_z = [[cos(angle_z), -sin(angle_z), 0],
-                        [sin(angle_z), cos(angle_z), 0],
+        rotation_z = [[math.cos(angle_z), -math.sin(angle_z), 0],
+                        [math.sin(angle_z), math.cos(angle_z), 0],
                         [0, 0, 1]]
         return rotation_z
     
@@ -32,32 +49,31 @@ class Projection:
 class Polygon:
     
     def __init__(self, points=[], connection=[]):
-        self.projection = Projection()
-        # self.points = points
+        self.projection = Projection(90, 16/9, 0.01, 1)
+        self.points = points
         self.connections = connection
         self.scale = 30
+        # self.points = [n for n in range(8)]
+        # self.points[0] = [[-1], [-1], [1]]
+        # self.points[1] = [[-1], [1], [1]]
+        # self.points[2] = [[1], [1], [1]]
+        # self.points[3] = [[1], [-1], [1]]
         
-        self.points = [n for n in range(8)]
-        self.points[0] = [[-1], [-1], [1]]
-        self.points[1] = [[-1], [1], [1]]
-        self.points[2] = [[1], [1], [1]]
-        self.points[3] = [[1], [-1], [1]]
+        # self.points[4] = [[-1], [-1], [-1]]
+        # self.points[5] = [[-1], [1], [-1]]
+        # self.points[6] = [[1], [1], [-1]]
+        # self.points[7] = [[1], [-1], [-1]]
         
-        self.points[4] = [[-1], [-1], [-1]]
-        self.points[5] = [[-1], [1], [-1]]
-        self.points[6] = [[1], [1], [-1]]
-        self.points[7] = [[1], [-1], [-1]]
-        
-        self.connections = [ 
-                             {'color' : (255, 0, 0), 'points' : (4, 5, 6, 7)}, # back
-                             {'color' : (0, 255, 0), 'points' : (0, 4, 7, 3)}, # top
-                             {'color' : (0, 0, 255), 'points' : (1, 2, 6, 5)}, # bottom
-                             {'color' : (255, 255, 0), 'points' : (4, 0, 1, 5)}, # left
-                             {'color' : (0, 255, 255), 'points' : (3, 2, 6, 7)}, # right
-                             {'color' : (255, 255, 255), 'points' : (0, 1, 2, 3)}, # front
-                             ]
+        # self.connections = [ 
+        #                      {'color' : (255, 0, 0), 'points' : (4, 5, 6, 7)}, # back
+        #                      {'color' : (0, 255, 0), 'points' : (0, 4, 7, 3)}, # top
+        #                      {'color' : (0, 0, 255), 'points' : (1, 2, 6, 5)}, # bottom
+        #                      {'color' : (255, 255, 0), 'points' : (4, 0, 1, 5)}, # left
+        #                      {'color' : (0, 255, 255), 'points' : (3, 2, 6, 7)}, # right
+        #                      {'color' : (255, 255, 255), 'points' : (0, 1, 2, 3)}, # front
+        #                      ]
 
-    def update(self, angle_x, angle_y, angle_z):
+    def update(self, surf, angle_x, angle_y, angle_z):
         points = [0 for _ in range(len(self.points))]
         i = 0
         rotation_x = self.projection.get_rotation_x(angle_x)
@@ -68,26 +84,25 @@ class Polygon:
             rotate_x = self.projection.multiply_m(rotation_x, point)
             rotate_y = self.projection.multiply_m(rotation_y, rotate_x)
             rotate_z = self.projection.multiply_m(rotation_z, rotate_y)
+
+            rotate_z = np.append(rotate_z, [1], axis=0)
+
             point_2d = self.projection.multiply_m(self.projection.projection_matrix, rotate_z)
             
-            x = (point_2d[0][0] * self.scale) + 60
-            y = (point_2d[1][0] * self.scale) + 60
-            z = (point_2d[1][0] * self.scale) + 60
-            print(point_2d)
+            x = (point_2d[0] * 2) + surf.get_width() // 4
+            y = (point_2d[1] * 2) + surf.get_height() // 4 
+            z = (point_2d[2])
             points[i] = (x,y,z)
             i +=1
         
         return points
     
     def render(self, surf, angle_x, angle_y, angle_z):
-        points = self.update(angle_x, angle_y, angle_z)
+        points = self.update(surf, angle_x, angle_y, angle_z)
         
         for faces in self.connections:
             coords = []
             for point in faces['points']:
-                if points[point][2] <  1:
-                    print("HEHE")
-                    continue
                 coords.append(points[point][0:2])
                 
             pygame.draw.polygon(surf, faces['color'], coords)
