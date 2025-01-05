@@ -52,7 +52,6 @@ class Polygon:
         self.projection = Projection(90, 16/9, 0.01, 1)
         self.points = points
         self.connections = connection
-        self.scale = 30
         # self.points = [n for n in range(8)]
         # self.points[0] = [[-1], [-1], [1]]
         # self.points[1] = [[-1], [1], [1]]
@@ -73,7 +72,7 @@ class Polygon:
         #                      {'color' : (255, 255, 255), 'points' : (0, 1, 2, 3)}, # front
         #                      ]
 
-    def update(self, surf, angle_x, angle_y, angle_z):
+    def update(self, surf, scale, angle_x, angle_y, angle_z):
         points = [0 for _ in range(len(self.points))]
         i = 0
         rotation_x = self.projection.get_rotation_x(angle_x)
@@ -89,23 +88,23 @@ class Polygon:
 
             point_2d = self.projection.multiply_m(self.projection.projection_matrix, rotate_z)
             
-            x = (point_2d[0]) + surf.get_width() // 4
-            y = (point_2d[1]) + surf.get_height() // 4 
+            x = (point_2d[0] * scale * 2) + surf.get_width() // 4
+            y = (point_2d[1] * scale * 2) + surf.get_height() // 4 
             z = (point_2d[2])
             points[i] = (x,y,z)
             i +=1
         
         return points
     
-    def render(self, surf, angle_x, angle_y, angle_z):
-        points = self.update(surf, angle_x, angle_y, angle_z)
-        
+    def render(self, surf, scale, angle_x, angle_y, angle_z):
+        points = self.update(surf, scale, angle_x, angle_y, angle_z)
         for faces in self.connections:
             coords = []
-            for point in faces['points']:
-                coords.append(points[point][0:2])
-                
-            pygame.draw.polygon(surf, faces['color'], coords)
+            if len(faces['points']) > 2:
+                for point in faces['points']:
+                    coords.append(points[point][0:2])
+                    
+                pygame.draw.polygon(surf, faces['color'], coords)
     
 class Cube:
     
