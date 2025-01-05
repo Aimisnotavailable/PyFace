@@ -18,18 +18,18 @@ MEDIAN_SCALE = (MAX_SCALE + MIN_SCALE) // 2
 
 R_INTRV = 0.1
 
-X_ROT_IDX =  (0, 152) # (4, 242) #
+X_ROT_IDX =  (4, 242) # (0, 152)  #
 Y_ROT_IDX = ((70, 107) , (300, 336))
 Z_ROT_IDX = (105, 334)
 
 def get_rot_z_angle(x, y):
-    return math.degrees(math.degrees(math.atan2(y, x)) * 0.001)
+    return -math.atan2(y, x)
 
 def get_rot_y_angle(len_difference):
-    return math.degrees(math.radians(len_difference) * 0.01)
+    return math.radians(len_difference)
 
 def get_rot_x_angle(len_difference):
-    return math.degrees(math.radians(len_difference) * 0.02 )
+    return math.radians(len_difference)
 
 def get_dist(point1, point2):
     return math.sqrt((point1[0] - point2[0]) ** 2 + (point1[1] - point2[1]) ** 2)
@@ -50,7 +50,7 @@ face_mesh = mp_face_mesh.FaceMesh()
 draw = mp.solutions.drawing_utils
 
 # Initialize video capture
-cap = cv2.VideoCapture('manny.mp4')
+cap = cv2.VideoCapture(0)
 results = None
 
 points = None
@@ -65,7 +65,7 @@ def render_face(surf, rect, render_points, connections):
             if rect.collidepoint(point):
                 print(idx)
             
-            pygame.draw.circle(surf, (255, 255, 255), point, 2)
+            pygame.draw.circle(surf, (255, 255, 255) if not idx in X_ROT_IDX else (255, 0, 255), point, 2)
     
     if render_points:
         for pairs in connections:
@@ -140,7 +140,7 @@ while True:
     # print(math.sqrt((render_points[10][0] - render_points[152][0]) ** 2 + (render_points[10][1] - render_points[152][1]) ** 2) - height)
     
     
-    render_face(screen, rect, render_points, connections)
+    # render_face(screen, rect, render_points, connections)
     # pygame.draw.line(screen, (0, 0, 255), render_points[159], render_points[386])
     
     for event in pygame.event.get():

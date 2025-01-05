@@ -89,8 +89,8 @@ class Polygon:
 
             point_2d = self.projection.multiply_m(self.projection.projection_matrix, rotate_z)
             
-            x = (point_2d[0] * 2) + surf.get_width() // 4
-            y = (point_2d[1] * 2) + surf.get_height() // 4 
+            x = (point_2d[0]) + surf.get_width() // 4
+            y = (point_2d[1]) + surf.get_height() // 4 
             z = (point_2d[2])
             points[i] = (x,y,z)
             i +=1
