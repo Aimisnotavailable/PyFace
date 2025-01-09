@@ -63,6 +63,9 @@ mp_face_mesh = mp.solutions.face_mesh
 face_mesh = mp_face_mesh.FaceMesh()
 draw = mp.solutions.drawing_utils
 
+mp_hand_mesh = mp.solutions.hands
+hand_mesh = mp_hand_mesh.Hands(max_num_hands=2)
+
 # Initialize video capture
 cap = cv2.VideoCapture(0)
 results = None
@@ -73,7 +76,7 @@ data = []
 smooth = Smooth()
 current_a_x = current_a_y = current_a_z = 0
 
-def render_face(surf, rect, render_points, connections):
+def render(surf, render_points, connections):
     for idx, point in enumerate(render_points):
             
             if rect.collidepoint(point):
@@ -95,7 +98,6 @@ data = json.load(fp)
 shapes : dict[str : Polygon] = {}
 camera = Follow(depth=30)
 
-
 for img_data in data:
     for img in img_data:
         conn = [i for i in range(len(img_data[img]['3d']))]
@@ -104,6 +106,8 @@ for img_data in data:
 while True:
     
     render_points = []
+    hand_render_points = []
+    hand_points = []
     screen.fill((0, 0, 0))
     display.fill((255, 255, 255))
     success, image = cap.read()
@@ -114,15 +118,29 @@ while True:
 
     # Process the image to find face landmarks
     results = face_mesh.process(rgb_image)
+    results_h = hand_mesh.process(rgb_image)
     
     if results.multi_face_landmarks:
         points = results.multi_face_landmarks[0].landmark
     
+    if results_h.multi_hand_landmarks:
+        hand_points = results_h.multi_hand_landmarks
+        
+    
     if points:
         for point in points:
             render_points.append([(point.x * width), (point.y * height)])
+
+    if hand_points:
+        for points_h in hand_points:
+            render_points_h = []
+            for point in points_h.landmark:
+                render_points_h.append([(point.x * width), (point.y * height)])
+            hand_render_points.append(render_points_h)
+            
     
     connections = mp_face_mesh.FACEMESH_CONTOURS
+    connections_h = mp_hand_mesh.HAND_CONNECTIONS
 
     mpos = pygame.mouse.get_pos() #[pygame.mouse.get_pos()[0] // 2, pygame.mouse.get_pos()[1] // 2]
     rect = pygame.Rect(*mpos, 2, 2)
@@ -203,13 +221,19 @@ while True:
     # print(math.sqrt((render_points[10][0] - render_points[152][0]) ** 2 + (render_points[10][1] - render_points[152][1]) ** 2) - height)
     
     
-    # render_face(screen, rect, render_points, connections)
+    # render(screen,render_points, connections)
+    for r_points_h in hand_render_points:
+        render(screen, r_points_h, connections_h)
     # pygame.draw.line(screen, (0, 0, 255), render_points[159], render_points[386])
     
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
-            fp =open('test.json', 'w+')
+            fp = open('test.json', 'w+')
             json.dump(FACE_SCALE, fp)
+            fp.close()
+            f = open('hand.json', 'w+')
+            json.dump(dir(mp_hand_mesh), f)
+            f.close()
             cap.release()
             pygame.quit()
             sys.exit()
