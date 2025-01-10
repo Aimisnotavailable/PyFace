@@ -72,7 +72,7 @@ class Polygon:
         #                      {'color' : (255, 255, 255), 'points' : (0, 1, 2, 3)}, # front
         #                      ]
 
-    def update(self, surf, scale, angle_x, angle_y, angle_z):
+    def update(self, scale, movement, angle_x, angle_y, angle_z):
         points = [0 for _ in range(len(self.points))]
         i = 0
         rotation_x = self.projection.get_rotation_x(angle_x)
@@ -80,7 +80,7 @@ class Polygon:
         rotation_z = self.projection.get_rotation_z(angle_z)
         
         for point in self.points:
-            rotate_x = self.projection.multiply_m(rotation_x, point)
+            rotate_x = self.projection.multiply_m(rotation_x, (point[0] - movement[0], point[1] - movement[1], point[2]))
             rotate_y = self.projection.multiply_m(rotation_y, rotate_x)
             rotate_z = self.projection.multiply_m(rotation_z, rotate_y)
 
@@ -88,21 +88,25 @@ class Polygon:
 
             point_2d = self.projection.multiply_m(self.projection.projection_matrix, rotate_z)
             
-            x = (point_2d[0] * scale * 2) + surf.get_width() // 4
-            y = (point_2d[1] * scale * 2) + surf.get_height() // 4 
+            x = (point_2d[0] * scale)
+            y = (point_2d[1] * scale)
             z = (point_2d[2])
             points[i] = (x,y,z)
             i +=1
         
         return points
     
-    def render(self, surf, scale, angle_x, angle_y, angle_z):
-        points = self.update(surf, scale, angle_x, angle_y, angle_z)
+    def render(self, surf, scale, camera, movement, angle_x, angle_y, angle_z):
+        points = self.update(scale, movement, angle_x, angle_y, angle_z)
+        offset = [0, 0]
+        if points:
+            offset = camera.scroll(surf, points[0][0:2])
+            
         for faces in self.connections:
             coords = []
             if len(faces['points']) > 2:
                 for point in faces['points']:
-                    coords.append(points[point][0:2])
+                    coords.append((points[point][0] - offset[0], points[point][1] - offset[1]))
                     
                 pygame.draw.polygon(surf, faces['color'], coords)
     
