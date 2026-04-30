@@ -209,7 +209,7 @@ class Draw(Engine):
                                     self.current_group = len(self.point_groups) - 1
                                 if self.save_file:
                                     with open(f'shapes/{self.current_text}.json', 'w+') as fp:
-                                        json.dump(self.point_groups,fp)
+                                        json.dump(self.point_groups,fp, indent=2)
 
                                 self.writing = False
                                 self.new_group = False
