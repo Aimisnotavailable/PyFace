@@ -132,9 +132,6 @@ class Cube:
         pygame.draw.line(surf, (255, 255, 255), (points[i][0], points[i][1]) , (points[j][0], points[j][1]))
 
     
-    # Main Loop
-    
-
     def render(self, surf, angle_x=0, angle_y=0, angle_z=0):    
         points = [0 for _ in range(len(self.cube_points))]
         i = 0
